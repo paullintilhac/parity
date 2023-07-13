@@ -154,57 +154,38 @@ class Model(torch.nn.Module):
         self.output_layer.bias = torch.nn.Parameter(torch.tensor([0.]))
 
     def forward(self, w):
-        print("word embedding: " + str(self.word_embedding))
-        print("w: " + str(w))
         x = self.word_embedding[w] + self.pos_encoding(len(w))
         y = self.encoder(x.unsqueeze(1)).squeeze(1)
         z = self.output_layer(y[-1])
         return z
 
-model = Model()
-optim = torch.optim.Adam(model.parameters(), lr=3e-4)
+chiang_model = Model()
 
 # Perturb parameters
-if args.perturb > 0:
-    with torch.no_grad():
-        for p in model.parameters():
-            p += torch.randn(p.size()) * args.perturb
+TEST_LEN=100
+TRAIN_LEN=100
+STEPS=100
+optim = torch.optim.Adam(chiang_model.parameters(), lr=3e-4)
+
 
 if not args.train: args.epochs = 1            
-for epoch in range(args.epochs):
-    if args.train:
-        train_loss = 0
-        train_steps = 0
-        train_correct = 0
-        for step in range(args.steps):
-            n = args.train_length
-            w = torch.tensor([random.randrange(2) for i in range(n)]+[2])
-            label = len([a for a in w if a == 1]) % 2 == 1
-            output = model(w)
-            if not label: output = -output
-            if output > 0: train_correct += 1
-            loss = -log_sigmoid(output)
-            train_loss += loss.item()
-            train_steps += 1
-            optim.zero_grad()
-            loss.backward()
-            optim.step()
 
-    with torch.no_grad():
-        test_loss = 0
-        test_steps = 0
-        test_correct = 0
-        for step in range(args.steps):
-            n = args.test_length
-            w = torch.tensor([random.randrange(2) for i in range(n)]+[2])
-            label = len([a for a in w if a == 1]) % 2 == 1
-            output = model(w)
-            if not label: output = -output
-            if output > 0: test_correct += 1
-            loss = -log_sigmoid(output)
-            test_loss += loss.item()
-            test_steps += 1
+with torch.no_grad():
+    test_loss = 0
+    test_steps = 0
+    test_correct = 0
+    for step in range(STEPS):
+        n = TEST_LEN
+        w = torch.tensor([random.randrange(2) for i in range(n)]+[2])
+        label = len([a for a in w if a == 1]) % 2 == 1
+        output = chiang_model(w)
+        if not label: output = -output
 
-    if args.train:
-        print(f'train_length={args.train_length} train_ce={train_loss/train_steps/math.log(2)} train_acc={train_correct/train_steps} ', end='')
-    print(f'test_length={args.test_length} test_ce={test_loss/test_steps/math.log(2)} test_acc={test_correct/test_steps}', flush=True)
+        if output > 0: 
+            #print("correct! label: " + str(label) + ", output: " + str(output))
+            test_correct += 1
+        loss = -log_sigmoid(output)
+        test_loss += loss.item()
+        test_steps += 1
+
+print(f'test_length={args.test_length} test_ce={test_loss/test_steps/math.log(2)} test_acc={test_correct/test_steps}', flush=True)
