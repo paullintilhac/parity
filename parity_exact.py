@@ -162,47 +162,6 @@ class Model(torch.nn.Module):
         z = self.output_layer(y[-1])
         return z
 
-# generate PARITY data
-import random
-def rand_key(p):
-
-    # Variable to store the
-    # string
-    key1 = ""
-
-    # Loop to find the string
-    # of desired length
-    numberOnes = 0
-
-    for i in range(p):
-
-        # randint function to generate
-        # 0, 1 randomly and converting
-        # the result into str
-        newBit = random.randint(0, 1)
-        numberOnes+=newBit
-        temp = str(newBit)
-
-        # Concatenation the random 0, 1
-        # to the final result
-        key1 += temp
-    hasParity = numberOnes%2
-
-    return(key1,hasParity)
-
-x = []
-y = []
-for i in range(1000):
-  # p = random.randint(0,20)
-  p=10 # this needs to be <20 or else the accuracy drops
-  randString, hasParity = rand_key(p)
-  x.append(list(randString))
-  y.append(hasParity)
-
-
-print("x[:2]: "+ str(x[:2]))
-print("y[:2]: "+ str(y[:2]))
-
 chiang_model = Model()
 
 # Perturb parameters
