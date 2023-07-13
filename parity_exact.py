@@ -206,8 +206,7 @@ print("y[:2]: "+ str(y[:2]))
 chiang_model = Model()
 
 # Perturb parameters
-TEST_LEN=100
-TRAIN_LEN=100
+TEST_LEN=10
 STEPS=1000
 optim = torch.optim.Adam(chiang_model.parameters(), lr=3e-4)
 
