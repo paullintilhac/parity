@@ -188,4 +188,5 @@ with torch.no_grad():
         test_loss += loss.item()
         test_steps += 1
 
+print("testing print statement")
 print(f'test_length={args.test_length} test_ce={test_loss/test_steps/math.log(2)} test_acc={test_correct/test_steps}', flush=True)
