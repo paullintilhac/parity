@@ -3,6 +3,7 @@ import math
 import random
 import encoder
 import argparse
+from progressbar import ProgressBar
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--train_length', dest='train_length', type=int, default=100)
@@ -12,8 +13,10 @@ ap.add_argument('--steps', dest='steps', type=int, default=100)
 ap.add_argument('--big', dest='big', type=float, default=1.)
 ap.add_argument('--perturb', dest='perturb', type=float, default=0, help='randomly perturb parameters')
 ap.add_argument('--train', dest='train', action='store_true', default=False)
-args = ap.parse_args()
+ap.add_argument('--inputs', dest='inputs', type=str, default=False)
 
+args = ap.parse_args()
+pbar = ProgressBar()
 log_sigmoid = torch.nn.LogSigmoid()
 
 class PositionEncoding(torch.nn.Module):
@@ -159,12 +162,53 @@ class Model(torch.nn.Module):
         z = self.output_layer(y[-1])
         return z
 
+# generate PARITY data
+import random
+def rand_key(p):
+
+    # Variable to store the
+    # string
+    key1 = ""
+
+    # Loop to find the string
+    # of desired length
+    numberOnes = 0
+
+    for i in range(p):
+
+        # randint function to generate
+        # 0, 1 randomly and converting
+        # the result into str
+        newBit = random.randint(0, 1)
+        numberOnes+=newBit
+        temp = str(newBit)
+
+        # Concatenation the random 0, 1
+        # to the final result
+        key1 += temp
+    hasParity = numberOnes%2
+
+    return(key1,hasParity)
+
+x = []
+y = []
+for i in range(1000):
+  # p = random.randint(0,20)
+  p=10 # this needs to be <20 or else the accuracy drops
+  randString, hasParity = rand_key(p)
+  x.append(list(randString))
+  y.append(hasParity)
+
+
+print("x[:2]: "+ str(x[:2]))
+print("y[:2]: "+ str(y[:2]))
+
 chiang_model = Model()
 
 # Perturb parameters
 TEST_LEN=100
 TRAIN_LEN=100
-STEPS=100
+STEPS=1000
 optim = torch.optim.Adam(chiang_model.parameters(), lr=3e-4)
 
 
@@ -174,7 +218,8 @@ with torch.no_grad():
     test_loss = 0
     test_steps = 0
     test_correct = 0
-    for step in range(STEPS):
+
+    for step in pbar(range(STEPS)):
         n = TEST_LEN
         w = torch.tensor([random.randrange(2) for i in range(n)]+[2])
         label = len([a for a in w if a == 1]) % 2 == 1
