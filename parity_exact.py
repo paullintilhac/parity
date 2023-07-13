@@ -154,6 +154,8 @@ class Model(torch.nn.Module):
         self.output_layer.bias = torch.nn.Parameter(torch.tensor([0.]))
 
     def forward(self, w):
+        print("word embedding: " + str(self.word_embedding))
+        print("w: " + str(w))
         x = self.word_embedding[w] + self.pos_encoding(len(w))
         y = self.encoder(x.unsqueeze(1)).squeeze(1)
         z = self.output_layer(y[-1])

@@ -7,8 +7,8 @@ import argparse
 ap = argparse.ArgumentParser()
 ap.add_argument('--train_length', dest='train_length', type=int, default=100)
 ap.add_argument('--test_length', dest='test_length', type=int, default=100)
-ap.add_argument('--epochs', dest='epochs', type=int, default=100)
-ap.add_argument('--steps', dest='steps', type=int, default=100)
+ap.add_argument('--epochs', dest='epochs', type=int, default=10)
+ap.add_argument('--steps', dest='steps', type=int, default=10)
 ap.add_argument('--layers', dest='layers', type=int, default=2)
 ap.add_argument('--heads', dest='heads', type=int, default=2)
 ap.add_argument('--d_model', type=int, default=16)
@@ -28,10 +28,16 @@ class PositionEncoding(torch.nn.Module):
 
     def forward(self, n):
         p = torch.arange(0, n).to(torch.float).unsqueeze(1)
+        print("dim p: " + str(p.size()))
+        thing1 = p / n * torch.exp(self.scales[:self.size//2])
+        thing2 = torch.cos(p*math.pi * torch.exp(self.scales[self.size//2:]))
+        print("thing1 size: " + str(thing1.size()) + ", thing2 size: " + str(thing2.size()))
+        
         pe = torch.cat([
-            p / n * torch.exp(self.scales[:n//2]),
-            torch.cos(p*math.pi * torch.exp(self.scales[n//2:])),
+            p / n * torch.exp(self.scales[:self.size//2]),
+            torch.cos(p*math.pi * torch.exp(self.scales[self.size//2:])),
         ], dim=1)
+        print("pe size: " + str(pe.size()))
         return pe
 
 class Model(torch.nn.Module):
@@ -52,8 +58,14 @@ class Model(torch.nn.Module):
 
     def forward(self, w):
         x = self.word_embedding(w) + self.pos_encoding(len(w))
+        # print("x size: " + str(x.size()) + ", we size: " + str(self.word_embedding(w).size())+ ", pen size: " + str(self.pos_encoding(len(w)).size()))
         y = self.transformer_encoder(x.unsqueeze(1)).squeeze(1)
+        # print("y size: " + str(y.size()))
+        # print("y[-1].size: " + str(y[-1].size()))
+
+
         z = self.output_layer(y[-1])
+        
         return z
 
 model = Model(3, args.layers, args.heads, args.d_model, args.d_ffnn, args.scaled, args.eps)
@@ -69,6 +81,9 @@ for epoch in range(args.epochs):
         w = torch.tensor([random.randrange(2) for i in range(n)]+[2])
         label = len([a for a in w if a == 1]) % 2 == 1
         output = model(w)
+        #print("output: " + str(output>0))
+
+
         if not label: output = -output
         if output > 0: train_correct += 1
         loss = -log_sigmoid(output)
